@@ -7,7 +7,9 @@ function package:init_ui()
     Input.BindAction("Omnibar", "Released", ToggleOmniBar)
 end
 
+-- If not nil, the open omnibar widget.
 local open_window
+-- If not nil, the anchor for the omnibar and open_window is a MenuPopup.
 local anchor
 -- Public functions
 function ToggleOmniBar(is_for_settings)
@@ -37,9 +39,9 @@ end
 
 local OmniBar_layout <const> =
 [[
-    <Scale dock=center>
-        <VerticalList height=1>
-            <Box bg=popup_additional_bg padding=4>
+    <Scale dock=center blocking=false>
+        <VerticalList height=1 blocking=false>
+            <Box bg=popup_additional_bg padding=4 blocking=false>
                 <VerticalList child_padding=4>
                     <TextSearch id=inst_search margin=3 on_refresh={on_filter} width=500/>
                 </VerticalList>
@@ -85,34 +87,42 @@ function OmniBar:update_scale()
 end
 
 function OmniBar:construct()
+    -- Calculate the breakpoints for interpolation.
     local width, height = UI.GetScreenSize()
+    -- Put the bar slghtly above center-screen.
     self.base_y = -150
+    -- Absolute y_offset taking screen size into account.
     self.max_y = height / 2 + self.base_y
     self.min_y = -1 * height / 2
     self.y = self.base_y
 
+    -- Center on the X axis.
     self.base_x = 0
     self.max_x = width / 2
     self.min_x = -1 * width / 2
     self.x = self.base_x
+
+    -- Update our position based on thoese values and the profile.
     self:update_position()
     self:update_scale()
 
-    -- Animate an add fx to opening of the window.
+    -- Animate and add fx to the opening of the window.
     self:TweenFromTo("sx", 0.01, 1, 40, "OutQuad")
     self:TweenFromTo("sy", 0.01, 1, 80, "OutQuad")
     UI.PlaySound("fx_ui_WINDOW_SELECTION_MENU_OPEN")
 
-    -- Capture escape key to close the window or else it opens the menu.
+    -- Capture escape key to close the window or else it opens the main menu.
     local process_input = function(key_name, is_down, axis, mouse_delta)
         if key_name == "ESCAPE" and open_window then
             return CloseOmniBar()
         end
         return true
     end
+    -- We delay focusing the search box so we don't prevent things like
+    -- stopping camera panning because we let the text box eat a keyup event.
     Input.SetInputProcessor(function(key_name, is_down, axis, mouse_delta)
-        -- We delay focusing the search box so we don't prevent things like
-        -- stopping camera panning by letting the text box eat a keyup event.
+        -- Pan lock can still happen if a key is pressed after opening the menu.
+        -- Not really worried about that part so much.
         if is_down then
             -- This input is intended for the omnibar, set everything up.
             Input.ClearInputProcessor()
@@ -122,8 +132,13 @@ function OmniBar:construct()
         return true
     end)
 
+    -- TODO(maz): Finish implementing codex entries below.
+    if true then
+        return
+    end
 
-    -- gather all categories
+    -- === CODEX ENTRIES ===
+    -- Gather all categories
     local faction = Game.GetLocalPlayerFaction()
     for id, def in pairs(data.codex) do
         if faction:IsUnlocked(id) and def.category then
@@ -138,6 +153,8 @@ function OmniBar:construct()
     table.sort(cats)
 end
 
+-- Returns a value found by moving `a` towards `b` by `percent`.
+-- If `percent` is negative, moves away in the same proportions.
 local function interpolate(a, b, percent)
     return a + (b - a) * percent / 100
 end
@@ -161,13 +178,18 @@ end
 
 function OmniBar:destruct()
     Input.ClearInputProcessor()
+    -- Remove reference to ourselves.
     open_window = nil
+    -- Clear codex stuff.
     catdefs = {}
     cats = {}
 end
 
+-- Filters the items to appear in `results` by `txt`.
 function OmniBar:on_filter(widget, txt)
     local filter = txt and txt ~= "" and txt:lower()
+
+    -- Always clear results even if the search is empty.
     self.results:Clear()
 
     if not filter then
@@ -188,7 +210,7 @@ function OmniBar:on_filter(widget, txt)
         catwrap:Add("<Reg bg=item_default/>", { def = def })
     end)
 
-    -- TODO(maz): Finish implementing codex entries
+    -- TODO(maz): Finish implementing codex entries below.
     if true then
         return
     end

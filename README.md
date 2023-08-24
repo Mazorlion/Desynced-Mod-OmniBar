@@ -23,6 +23,7 @@ If not loaded into a game, the sliders may be changed but will you will be unabl
 
 ## Potential Additions
 
+- Link items/components to faction item view
 - Search Codex Entries
 - Search Research
 - Search Settings
