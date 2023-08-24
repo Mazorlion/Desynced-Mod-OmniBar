@@ -12,9 +12,11 @@ local open_window
 -- If not nil, the anchor for the omnibar and open_window is a MenuPopup.
 local anchor
 -- Public functions
+-- Toggles the omnibar, returns true if it was created false otherwise.
 function ToggleOmniBar(is_for_settings)
     if open_window then
-        return CloseOmniBar()
+        CloseOmniBar()
+        return false
     end
     if is_for_settings then
         -- Create a non-popup omnibar so it moves visibly for tweaking settings.
@@ -28,6 +30,7 @@ function ToggleOmniBar(is_for_settings)
         local width, height = UI.GetScreenSize()
         open_window = UI.MenuPopup("OmniBar", "DOWN", "MIDDLE", anchor, width / 2, height / 2)
     end
+    return true
 end
 
 function UpdateOmniBarPosition()

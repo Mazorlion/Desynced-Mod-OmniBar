@@ -80,10 +80,10 @@ return UI.New([[
         end
     end,
     toggle_omnibar = function(self)
-        -- Show the bar at very high priority to overlay on menu.
-        ToggleOmniBar(true)
-
-        -- Flip button colors.
-        self.toggle.active = not self.toggle.active
+        self.toggle.active = ToggleOmniBar(true)
     end,
+    destruct = function(self)
+        -- Close the bar if the menu closes.
+        CloseOmniBar()
+    end
 })
