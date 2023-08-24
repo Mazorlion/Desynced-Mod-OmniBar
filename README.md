@@ -7,7 +7,9 @@ Close Keybind: `ESCAPE`
 
 TODO(maz): Make close configurable?
 
-Pops up an omnibar that searches all unlockables available to your faction.
+Pops up an omnibar that searches all unlockables available to your faction. Hovering an item in the results works the same as any other interface, including the ability to hold modifiers (`Ctrl`/`Alt`/`Shift`) to see more info.
+
+Clicking anywhere outside the omnibar will also immediately close it.
 
 ## Settings
 
