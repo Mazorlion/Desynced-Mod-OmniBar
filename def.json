@@ -1,0 +1,20 @@
+{
+    "id": "OmniBar",
+    "name": "OmniBar",
+    "version_name": "0.0.2",
+    "version_code": 2,
+    "author": "Maz",
+    "homepage": "",
+    "description": "Adds a searchable omnibar.",
+    "options": "options.lua",
+    "packages": {
+        "Addon": {
+            "name": "OmniBar",
+            "entry": "omnibar.lua",
+            "dependencies": [
+                "Main/Data"
+            ],
+            "type": "Addon"
+        }
+    }
+}
