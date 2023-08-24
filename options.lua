@@ -2,9 +2,8 @@ local profile = Game.GetProfile()
 
 return UI.New([[
 	<VerticalList child_padding=8>
-        <Button id=toggle on_click={toggle_omnibar} width=32 height=32>
-            <Text text="Toggle OmniBar" id=toggle_text/>
-        </Button>
+        <Button id=toggle on_click={toggle_omnibar} width=32 height=32
+            text="Toggle OmniBar" />
         <Text size=16 text="Position" color=ui_light/>
         <Button id=reset_location width=32 height=32>
             <Text text="Reset Location"/>
@@ -43,7 +42,8 @@ return UI.New([[
 
         -- If the game isn't loaded we can't actually show the bar.
         if not ToggleOmniBar then
-            menu.toggle_text.text = "Toggle OmniBar (Disabled - Load Game to Test)"
+            menu.toggle.text = "Toggle OmniBar (Disabled - Load Game to Test)"
+            menu.toggle.disabled = true
         end
 
         -- Updates a given slider and its text with `val`
@@ -52,10 +52,9 @@ return UI.New([[
             menu[key].value = val
         end
 
+        -- Initially set the sliders to the profile values.
         for key, val in pairs(profile.omnibar) do
-            -- Initially set the sliders to the profile values.
             update(key, val)
-
             -- On slider change, update the text (via `update`) and save it.
             menu[key].on_change = function(slider, val)
                 update(slider.id, val)
@@ -80,8 +79,11 @@ return UI.New([[
             menu.scale.on_change(menu.scale, 100)
         end
     end,
-    toggle_omnibar = function()
+    toggle_omnibar = function(self)
         -- Show the bar at very high priority to overlay on menu.
-        ToggleOmniBar(100)
+        ToggleOmniBar(true)
+
+        -- Flip button colors.
+        self.toggle.active = not self.toggle.active
     end,
 })

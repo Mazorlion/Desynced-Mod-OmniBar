@@ -7,13 +7,25 @@ function package:init_ui()
     Input.BindAction("Omnibar", "Released", ToggleOmniBar)
 end
 
-local open_window, open_window_name
+local open_window
+local anchor
 -- Public functions
-function ToggleOmniBar(ui_priority)
+function ToggleOmniBar(is_for_settings)
     if open_window then
         return CloseOmniBar()
     end
-    open_window, open_window_name = UI.AddLayout("OmniBar", ui_priority or 20)
+    if is_for_settings then
+        -- Create a non-popup omnibar so it moves visibly for tweaking settings.
+        open_window = UI.AddLayout("OmniBar", 200)
+    else
+        anchor = UI.AddLayout([[<Box dock=center/>]], {
+            destruct = function()
+                anchor = nil
+            end
+        }, 20)
+        local width, height = UI.GetScreenSize()
+        open_window = UI.MenuPopup("OmniBar", "DOWN", "MIDDLE", anchor, width / 2, height / 2)
+    end
 end
 
 function UpdateOmniBarPosition()
@@ -44,8 +56,13 @@ UI.Register("OmniBar", OmniBar_layout, OmniBar)
 
 
 function CloseOmniBar()
-    open_window:RemoveFromParent()
-    open_window, open_window_name = nil, nil
+    -- If it's anchored that above won't trigger.
+    if anchor then
+        return anchor:RemoveFromParent()
+    end
+    if open_window then
+        open_window:RemoveFromParent()
+    end
 end
 
 local CodexButton_layout <const> =
@@ -55,37 +72,16 @@ local CodexButton_layout <const> =
 	</Canvas>
 ]]
 
-local function interpolate(a, b, percent)
-    return a + (b - a) * percent / 100
-end
-
 local catdefs = {}
 local cats = {}
-function OmniBar:update_position()
-    local profile = Game.GetProfile()
-
-    if profile.omnibar then
-        local y_offset = profile.omnibar.y_offset or 0
-        if y_offset < 0 then
-            self.y = interpolate(self.base_y, self.min_y, math.abs(y_offset))
-        else
-            self.y = interpolate(self.base_y, self.max_y, y_offset)
-        end
-
-        local x_offset = profile.omnibar.x_offset or 0
-        if x_offset < 0 then
-            self.x = interpolate(self.base_x, self.min_x, math.abs(x_offset))
-        else
-            self.x = interpolate(self.base_x, self.max_x, x_offset)
-        end
-    end
-end
-
 function OmniBar:update_scale()
     local profile = Game.GetProfile()
-    if profile.omnibar then
-        self.scale = profile.omnibar.scale / 100
+    -- Default to UI scale.
+    local scale = UI.GetScale()
+    if profile.omnibar and profile.omnibar.scale then
+        scale = scale * profile.omnibar.scale / 100
     end
+    self.scale = scale
 end
 
 function OmniBar:construct()
@@ -99,7 +95,6 @@ function OmniBar:construct()
     self.max_x = width / 2
     self.min_x = -1 * width / 2
     self.x = self.base_x
-
     self:update_position()
     self:update_scale()
 
@@ -107,11 +102,6 @@ function OmniBar:construct()
     self:TweenFromTo("sx", 0.01, 1, 40, "OutQuad")
     self:TweenFromTo("sy", 0.01, 1, 80, "OutQuad")
     UI.PlaySound("fx_ui_WINDOW_SELECTION_MENU_OPEN")
-
-    -- Immediately focus the search box.
-    -- self.inst_search:Focus()
-
-
 
     -- Capture escape key to close the window or else it opens the menu.
     local process_input = function(key_name, is_down, axis, mouse_delta)
@@ -121,12 +111,15 @@ function OmniBar:construct()
         return true
     end
     Input.SetInputProcessor(function(key_name, is_down, axis, mouse_delta)
-        if not is_down then
-            return true
+        -- We delay focusing the search box so we don't prevent things like
+        -- stopping camera panning by letting the text box eat a keyup event.
+        if is_down then
+            -- This input is intended for the omnibar, set everything up.
+            Input.ClearInputProcessor()
+            self.inst_search:Focus()
+            Input.SetInputProcessor(process_input)
         end
-        Input.ClearInputProcessor()
-        self.inst_search:Focus()
-        Input.SetInputProcessor(process_input)
+        return true
     end)
 
 
@@ -145,9 +138,30 @@ function OmniBar:construct()
     table.sort(cats)
 end
 
+local function interpolate(a, b, percent)
+    return a + (b - a) * percent / 100
+end
+function OmniBar:update_position()
+    local profile = Game.GetProfile()
+    if profile.omnibar then
+        local y_offset = profile.omnibar.y_offset or 0
+        if y_offset < 0 then
+            self.y = interpolate(self.base_y, self.min_y, math.abs(y_offset))
+        else
+            self.y = interpolate(self.base_y, self.max_y, y_offset)
+        end
+        local x_offset = profile.omnibar.x_offset or 0
+        if x_offset < 0 then
+            self.x = interpolate(self.base_x, self.min_x, math.abs(x_offset))
+        else
+            self.x = interpolate(self.base_x, self.max_x, x_offset)
+        end
+    end
+end
+
 function OmniBar:destruct()
     Input.ClearInputProcessor()
-    open_window, open_window_name = nil, nil
+    open_window = nil
     catdefs = {}
     cats = {}
 end
