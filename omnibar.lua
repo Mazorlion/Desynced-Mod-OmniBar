@@ -37,6 +37,18 @@ function UpdateOmniBarPosition()
     end
 end
 
+function CloseOmniBar()
+    -- If it's anchored that above won't trigger.
+    if anchor then
+        return anchor:RemoveFromParent()
+    end
+    if open_window then
+        open_window:RemoveFromParent()
+    end
+end
+
+-- ==== Internals ===
+
 local OmniBar_layout <const> =
 [[
     <Scale dock=center blocking=false>
@@ -52,38 +64,19 @@ local OmniBar_layout <const> =
         </VerticalList>
     </Scale>
 ]]
-
 local OmniBar <const> = {}
 UI.Register("OmniBar", OmniBar_layout, OmniBar)
 
-
-function CloseOmniBar()
-    -- If it's anchored that above won't trigger.
-    if anchor then
-        return anchor:RemoveFromParent()
-    end
-    if open_window then
-        open_window:RemoveFromParent()
-    end
-end
-
-local CodexButton_layout <const> =
-[[
-	<Canvas>
-		<Button on_click={on_select} width=320><Text text={text} width=280 halign=left wrap=true/></Button>
-	</Canvas>
-]]
-
 local catdefs = {}
 local cats = {}
-function OmniBar:update_scale()
-    local profile = Game.GetProfile()
-    -- Default to UI scale.
-    local scale = UI.GetScale()
-    if profile.omnibar and profile.omnibar.scale then
-        scale = scale * profile.omnibar.scale / 100
-    end
-    self.scale = scale
+
+function OmniBar:destruct()
+    Input.ClearInputProcessor()
+    -- Remove reference to ourselves.
+    open_window = nil
+    -- Clear codex stuff.
+    catdefs = {}
+    cats = {}
 end
 
 function OmniBar:construct()
@@ -176,22 +169,29 @@ function OmniBar:update_position()
     end
 end
 
-function OmniBar:destruct()
-    Input.ClearInputProcessor()
-    -- Remove reference to ourselves.
-    open_window = nil
-    -- Clear codex stuff.
-    catdefs = {}
-    cats = {}
+-- Updates the scale of the bar based on profile and UI settings.
+function OmniBar:update_scale()
+    local profile = Game.GetProfile()
+    -- Default to UI scale.
+    local scale = UI.GetScale()
+    if profile.omnibar and profile.omnibar.scale then
+        scale = scale * profile.omnibar.scale / 100
+    end
+    self.scale = scale
 end
 
+-- Layout for codex buttons in the results.
+local CodexButton_layout <const> =
+[[
+	<Canvas>
+		<Button on_click={on_select} width=320><Text text={text} width=280 halign=left wrap=true/></Button>
+	</Canvas>
+]]
 -- Filters the items to appear in `results` by `txt`.
 function OmniBar:on_filter(widget, txt)
     local filter = txt and txt ~= "" and txt:lower()
-
     -- Always clear results even if the search is empty.
     self.results:Clear()
-
     if not filter then
         return
     end
