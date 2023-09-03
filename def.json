@@ -1,8 +1,8 @@
 {
     "id": "OmniBar",
     "name": "OmniBar",
-    "version_name": "0.0.4",
-    "version_code": 4,
+    "version_name": "0.0.5",
+    "version_code": 5,
     "author": "Maz",
     "homepage": "",
     "description": "Adds a searchable omnibar.",
