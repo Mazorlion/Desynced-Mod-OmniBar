@@ -208,7 +208,6 @@ function OmniBar:on_filter(widget, txt)
         -- Order instructions first when editing behaviors.
         self:filter_instructions(filter)
         self:filter_unlockables(filter)
-        print(main_window.vars)
     else
         self:filter_unlockables(filter)
         self:filter_instructions(filter)
