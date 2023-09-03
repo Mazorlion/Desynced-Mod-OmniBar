@@ -11,6 +11,11 @@ Pops up an omnibar that searches all unlockables available to your faction. Hove
 
 Clicking anywhere outside the omnibar will also immediately close it.
 
+![image](img/omnibar_instruction.png)
+![image](img/omnibar_instruction_pick.png)
+
+Instructions are now searchable and draggable directly into your program.  All other results are also draggable both into your program registers or registers in general (assembler, signal, etc...).
+
 ## Settings
 
 ![image](img/omnibar_keybind.png)
