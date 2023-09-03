@@ -133,6 +133,9 @@ function OmniBar:construct()
         return
     end
 
+    -- Doesnt work yet.
+    self:show_instruction_variables()
+
     -- === CODEX ENTRIES ===
     -- Gather all categories
     local faction = Game.GetLocalPlayerFaction()
@@ -190,6 +193,7 @@ local CodexButton_layout <const> =
 		<Button on_click={on_select} width=320><Text text={text} width=280 halign=left wrap=true/></Button>
 	</Canvas>
 ]]
+
 -- Filters the items to appear in `results` by `txt`.
 function OmniBar:on_filter(widget, txt)
     local filter = txt and txt ~= "" and txt:lower()
@@ -199,19 +203,16 @@ function OmniBar:on_filter(widget, txt)
         return
     end
 
-    local lastcat, catwrap
-    ProcessUnlockedDefinitions(function(id, def, category)
-        local found = not filter or string.find(string.lower(L(def.name or "")), filter) -- filter by text
-        if not found then return end
-        if lastcat ~= category then
-            lastcat = category
-            self.results:Add("Spacer", { height = 10 })
-            self.results:Add("Text", { text = category.name })
-            self.results:Add("Spacer", { height = 5 })
-            catwrap = self.results:Add("<Wrap child_padding=4/>")
-        end
-        catwrap:Add("<Reg bg=item_default/>", { def = def })
-    end)
+    local main_window, window_name = GetMainWindow()
+    if window_name == "Program" then
+        -- Order instructions first when editing behaviors.
+        self:filter_instructions(filter)
+        self:filter_unlockables(filter)
+        print(main_window.vars)
+    else
+        self:filter_unlockables(filter)
+        self:filter_instructions(filter)
+    end
 
     -- TODO(maz): Finish implementing codex entries below.
     if true then
@@ -240,6 +241,102 @@ function OmniBar:on_filter(widget, txt)
             --     self:on_select(newbutton)
             --     openid = nil
             -- end
+        end
+    end
+end
+
+function OmniBar:filter_unlockables(filter)
+    local lastcat, catwrap
+    ProcessUnlockedDefinitions(function(id, def, category)
+        local found = not filter or string.find(string.lower(L(def.name or "")), filter) -- filter by text
+        if not found then return end
+        if lastcat ~= category then
+            lastcat = category
+            self.results:Add("Spacer", { height = 10 })
+            self.results:Add("Text", { text = category.name })
+            self.results:Add("Spacer", { height = 5 })
+            catwrap = self.results:Add("<Wrap child_padding=4/>")
+        end
+        local inst = {
+            [1] = { id = def.id },
+            op = "omnibar_drag"
+        }
+        catwrap:Add("<Reg bg=item_default on_drag_start={omnibar_unlockable_drag_start}/>",
+            {
+                def = def,
+                ui_icon = def.texture,
+                -- Arguments for instruction register dropping.
+                -- From Program.lua
+                reg_idx = -5000,
+                arg_idx = 1,
+                inst = inst,
+                -- Arguments for dropping on frame/component reg.
+                -- Cheat and say we're an item.
+                -- From FrameView.lua
+                dragtype = "ITEM",
+                slot = { id = def.id }
+            })
+    end)
+end
+
+local Instruction_layout <const> = [[
+	<Box on_drag_start={on_instruction_drag_start}>
+		<HorizontalList>
+			<Image image={icon} width=30 height=30 valign=center color=ui_light/>
+			<Text text={title} width=186 wrap=true margin=2 valign=center/>
+		</HorizontalList>
+	</Box>
+]]
+
+function OmniBar:on_instruction_drag_start(payload)
+    local bar = UI.New(Instruction_layout, { title = payload.title, op = payload.op, icon = payload.icon })
+    -- Close the bar to unblock the behavior.
+    CloseOmniBar()
+    return bar
+end
+
+function OmniBar:filter_instructions(filter)
+    -- === INSTRUCTIONS ===
+    local found_instructions = {}
+    for _, op in ipairs(GetSortedTableKeys(data.instructions)) do
+        local inst = data.instructions[op]
+        if string.find(string.lower(L(inst.name or "")), filter)
+            or string.find(string.lower(L(inst.desc or "")), filter) then
+            table.insert(found_instructions, {
+                title = inst.name or op,
+                op = op,
+                tooltip = inst.desc,
+                icon = inst.icon
+            })
+        end
+    end
+
+    if #found_instructions > 0 then
+        self.results:Add("Spacer", { height = 10 })
+        self.results:Add("Text", { text = "Instructions" })
+        for _, inst in ipairs(found_instructions) do
+            self.results:Add(Instruction_layout, inst)
+        end
+    end
+end
+
+function OmniBar:omnibar_unlockable_drag_start(payload)
+    local drag_reg = UI.New("<Reg width=32 height=32/>", { ui_icon = payload.ui_icon })
+    -- Hide the bar to unblock the screen.
+    CloseOmniBar()
+    return drag_reg
+end
+
+-- TODO(maz): Make this work.
+function OmniBar:show_instruction_variables()
+    local main_window, window_name = GetMainWindow()
+    if window_name == "Program" and main_window and main_window.vars then
+        local var_list = self.results:Add("<HorizontalList/>")
+        for k, v in pairs(main_window.vars) do
+            var_list:Add("<Reg width=48 height=48 on_drag_start={omnibar_unlockable_drag_start}/>",
+                { num = k, reg_idx = v })
+                :Add(
+                    "<Image image=icon_small_register_var color=#FF00FF dock=center/>")
         end
     end
 end
