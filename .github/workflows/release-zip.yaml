@@ -1,0 +1,26 @@
+name: Create Release ZIP and Upload
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install ZIP
+      run: sudo apt-get install zip
+
+    - name: Create ZIP
+      run: zip -r omnibar.zip *.lua def.json LICENSE
+
+    - name: Upload Release to GitHub
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./omnibar.zip
+        token: ${{ secrets.GITHUB_TOKEN }}
