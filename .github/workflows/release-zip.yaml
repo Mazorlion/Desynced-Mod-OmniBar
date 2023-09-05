@@ -20,7 +20,7 @@ jobs:
       run: sudo apt-get install zip
 
     - name: Create ZIP
-      run: zip -r omnibar.zip *.lua def.json LICENSE
+      run: zip -r omnibar.zip . -i '*.lua' -i 'def.json' -i 'LICENSE'
 
     - name: Upload Release to GitHub
       uses: softprops/action-gh-release@v1
