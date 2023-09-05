@@ -294,26 +294,88 @@ function OmniBar:on_instruction_drag_start(payload)
     return bar
 end
 
+---@param haystack string
+---@param needle string
+---@return
+---| 1 # Equal
+---| 2 # Match at start
+---| 3 # Match at start of a word
+---| 4 # Match somewhere
+---| false # No match
+local function match_score(haystack, needle)
+    haystack = string.lower(haystack)
+    -- Equal
+    if needle == haystack then
+        return 1
+    end
+
+    local pos = string.find(haystack, needle, 1, true)
+    -- Match at start
+    if pos == 1 then
+        return 2
+    end
+    -- Match at start of a word
+    if pos and string.find(haystack, " "..needle, 1, true) then
+        return 3
+    end
+    -- Match somewhere
+    if pos then
+        return 4
+    end
+    -- No match
+    return false
+end
+
+local function score_compare(a, b)
+    if a._score ~= b._score then
+        return a._score < b._score
+    else
+        return a.title < b.title
+    end
+end
+
+---@param filter string Lowercase search text
 function OmniBar:filter_instructions(filter)
     -- === INSTRUCTIONS ===
     local found_instructions = {}
-    for _, op in ipairs(GetSortedTableKeys(data.instructions)) do
-        local inst = data.instructions[op]
-        if string.find(string.lower(L(inst.name or "")), filter)
-            or string.find(string.lower(L(inst.desc or "")), filter) then
-            table.insert(found_instructions, {
-                title = inst.name or op,
-                op = op,
-                tooltip = inst.desc,
-                icon = inst.icon
-            })
+    for op, inst in pairs(data.instructions) do
+        if inst.name then
+            local l_name = L(inst.name)
+            local l_desc = L(inst.desc)
+            local score = match_score(l_name, filter)
+            if not score and inst.desc then
+                score = match_score(l_desc, filter)
+                if score then
+                    score = score + 5
+                end
+            end
+            if score then
+                table.insert(found_instructions, {
+                    title = l_name,
+                    op = op,
+                    tooltip = l_desc,
+                    icon = inst.icon,
+                    _score = score
+                })
+            end
         end
     end
 
     if #found_instructions > 0 then
+        table.sort(found_instructions, score_compare)
         self.results:Add("Spacer", { height = 10 })
         self.results:Add("Text", { text = "Instructions" })
+        local last_score = nil
         for _, inst in ipairs(found_instructions) do
+            -- Visually separate match types
+            if last_score and last_score ~= inst._score then
+                self.results:Add("Spacer", { height = 10 })
+                -- Note description matches
+                if last_score < 5 and inst._score >= 5 then
+                    self.results:Add("Text", { text = "Instructions (Description match)"})
+                end
+            end
+            last_score = inst._score
             self.results:Add(Instruction_layout, inst)
         end
     end
