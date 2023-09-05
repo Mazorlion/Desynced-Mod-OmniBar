@@ -1,5 +1,8 @@
 name: Create Release ZIP and Upload
 
+permissions:
+    contents: write
+
 on:
   push:
     tags:
